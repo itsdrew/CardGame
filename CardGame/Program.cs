@@ -11,18 +11,30 @@ namespace CardGame {
 			Player player3 = new Player("Rain");
 			Player player4 = new Player("Riley");
 
-			List<Player> players = new List<Player> { player1 };
+			List<Player> players = new List<Player> { player1, player2, player3, player4 };
 
-			Round round = new Round(players);
-			round.Deal();
-			round.SortHands(HandSortOptions.STANDARD);
-			round.Bid(); //TODO
-			round.SetCardValues();
-			round.SortHands(HandSortOptions.TRUMP_VALUE);
-			round.Play(); //TODO
+			int numRounds = 100000;
 
-			//Test
-			round.Players[0].Hand.ForEach(card => Console.WriteLine(card));
+			while (numRounds > 0) {
+
+
+				SimpleSpadesRound round = new SimpleSpadesRound(players);
+				round.Deal();
+				round.SortHands(HandSortOptions.STANDARD);
+				//round.Bid(); //TODO
+				round.SetCardValues();
+				round.SortHands(HandSortOptions.TRUMP_VALUE);
+				//round.Play(); //TODO
+				//round.PrintGameState();
+				
+				round.PlayRound();
+
+
+				round.PrintScores();
+
+				numRounds--;
+			}
+
 
 		}
 	}

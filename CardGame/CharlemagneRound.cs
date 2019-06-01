@@ -5,16 +5,16 @@ using System.Linq;
 namespace CardGame {
 
 	//Charlemagne
-	public class Round {
+	public class CharlemagneRound : ICardGameRound {
 
 		public List<Player> Players { get; set; }
 		public Deck Deck { get; set; }
 		public Suit Trump { get; set; }
 
-		public Round(List<Player> players) {
+		public CharlemagneRound(List<Player> players) {
 
 			this.Players = players;
-			this.Deck = new Deck();
+			this.Deck = new Deck(7);
 
 			if (this.Deck.Cards.Count % Players.Count != 0) {
 				throw new Exception("Deck % Players != 0");
@@ -67,6 +67,14 @@ namespace CardGame {
 
 		public void SortHands(HandSortOptions sortOptions) {
 			Players.ForEach(player => player.SortHand(sortOptions));
+		}
+
+		public void PrintGameState() {
+
+			Players.ForEach(player => {
+				Console.WriteLine(player.Name);
+				Console.WriteLine(player.Hand);
+			});
 		}
 
 		public void Play() {

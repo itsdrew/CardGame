@@ -9,9 +9,7 @@ namespace CardGame {
 
 		public List<Card> Cards { get; set; } = new List<Card>();
 
-		public Deck(bool shuffled = true) {
-
-			int minRank = 7;
+		public Deck(int minRank, bool shuffled = true) {
 
 			foreach (Rank rank in Enum.GetValues(typeof(Rank))) {
 
