@@ -47,27 +47,55 @@ namespace CardGame {
 
 			while (leadPlayer.Hand.Any()) {
 
-				//TODO select card
-				Card leadCard = leadPlayer.PopRandomCard();
+				Console.WriteLine();
+				Console.WriteLine(leadPlayer.Name + " to lead." );
+				Console.WriteLine();
+
+				Card leadCard = null;
+
+				if (leadPlayer.IsHuman()) {
+					leadCard = leadPlayer.HumanPickCard(leadCard);
+				} else {
+					leadCard = leadPlayer.PopRandomCard();
+				}
+
 				Trick trick = new Trick(leadCard, leadPlayer);
+
 				Card currentWinningCard = leadCard;
 
 				foreach (Player player in Players) {
+
 					if (!player.Equals(leadPlayer)) {
 
-						Card cardToPlay = player.PopRandomCard(leadCard, currentWinningCard);
+						Card cardToPlay = null;
+						if (player.IsHuman()) {
+							trick.PrintTrick();
+							cardToPlay = player.HumanPickCard(leadCard);
+						} else {
+							cardToPlay = player.AIPickCard(leadCard, currentWinningCard);
+						}
 
 						trick.AddCard(cardToPlay, player);
 
 						if (cardToPlay.Value > currentWinningCard.Value &&
-							cardToPlay.Suit.Equals(leadCard.Suit) || cardToPlay.IsTrump)
+							cardToPlay.Suit.Equals(leadCard.Suit) || cardToPlay.IsTrump) {
 
 							currentWinningCard = cardToPlay;
+						}
+
 					}
 				}
 
+				Console.WriteLine();
+				trick.PrintTrick();
+				Console.WriteLine();
+
 				Player winner = trick.DetermineWinner();
 				winner.Tricks++;
+
+				Console.WriteLine("Trick won by: " + winner.Name);
+				Console.WriteLine();
+				Console.WriteLine();
 
 				leadPlayer = winner;
 

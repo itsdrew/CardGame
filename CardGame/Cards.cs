@@ -69,7 +69,7 @@ namespace CardGame {
 		}
 
 		public override string ToString() {
-			return this.Rank + ":" + this.Suit + ":" + this.Color + ":" + this.Value;
+			return this.Rank + ":" + this.Suit;
 		}
 
 	}

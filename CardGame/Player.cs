@@ -6,12 +6,25 @@ namespace CardGame {
 	public class Player {
 
 		public string Name { get; set; }
+
+
+		public PlayerType PlayerType { get; set; }
+
 		public List<Card> Hand { get; set; } = new List<Card>();
 		public int Tricks;
 		public Player partner;
 
-		public Player(string name) {
+		public Player(string name, PlayerType playerType) {
 			this.Name = name;
+			this.PlayerType = playerType;
+		}
+
+		public bool IsHuman() {
+			return PlayerType.Equals(PlayerType.HUMAN);
+		}
+
+		public bool IsAI() {
+			return PlayerType.Equals(PlayerType.AI);
 		}
 
 		public void SortHand(HandSortOptions options) {
@@ -22,8 +35,25 @@ namespace CardGame {
 			}
 		}
 
+		private bool CardChoiceIsValid(Card leadCard, Card cardChoice) {
+
+			Suit cardChoiceSuit = cardChoice.Suit;
+
+			//TODO Change this so it works for a game that includes High/Low Jack or 9
+			if (leadCard == null || cardChoice.Suit.Equals(leadCard.Suit)) {
+				return true;
+			} else {
+				if (Hand.FindAll(card => card.Suit.Equals(leadCard.Suit)).Count>0) {
+					return false;
+				} else {
+					return true;
+				}
+			}
+
+		}
+
 		//Follow suit if have card higher, throw highest, else throw lowest, else throw lowest spade, else throw lowest card
-		public Card PopRandomCard(Card leadCard, Card currentWinningCard) {
+		public Card AIPickCard(Card leadCard, Card currentWinningCard) {
 
 			List<Card> cardsInSuit = new List<Card>();
 			List<Card> trumps = new List<Card>();
@@ -76,7 +106,55 @@ namespace CardGame {
 			return cardToPlay;
 		}
 
-		public Card PopRandomCard() {
+		public Card HumanPickCard(Card leadCard) {
+
+			Console.WriteLine();
+			PrintHandWithIndex();
+			Console.WriteLine();
+			Console.WriteLine("Select a card to play");
+			Console.WriteLine();
+
+			string userInput = Console.ReadLine();
+
+			int idx;
+
+			if (int.TryParse(userInput, out idx)) {
+
+				if (idx>=0 && idx<Hand.Count) {
+					
+					Card choice = Hand[idx];
+
+					if (CardChoiceIsValid(leadCard, choice)) {
+
+						Console.WriteLine(choice);
+						Hand.RemoveAt(idx);
+						return choice;
+
+					} else {
+
+						Console.WriteLine("You must follow suit");
+						return HumanPickCard(leadCard);
+
+					}
+
+				} else {
+
+					Console.WriteLine("Enter a valid choice");
+					return HumanPickCard(leadCard);
+
+				}
+			} else {
+
+				Console.WriteLine("Enter a valid number");
+
+				return HumanPickCard(leadCard);
+
+			}
+
+
+		}
+
+			public Card PopRandomCard() {
 
 			Random random = new Random();
 
@@ -86,6 +164,14 @@ namespace CardGame {
 			Hand.RemoveAt(randCardIndex);
 
 			return card;
+		}
+
+		public void PrintHandWithIndex() {
+
+			for (int i = 0; i<Hand.Count; i++) {
+				Console.WriteLine("(" + i + ")  " + Hand[i]);
+			}
+
 		}
 
 		//Debug
@@ -99,5 +185,12 @@ namespace CardGame {
 
 		STANDARD,
 		TRUMP_VALUE
+	}
+
+	public enum PlayerType {
+	
+		HUMAN,
+		AI
+	
 	}
 }
