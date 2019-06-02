@@ -4,12 +4,18 @@ using System.Linq;
 
 namespace CardGame {
 	public class SimpleSpadesRound : ICardGameRound {
-	
+
+		public static bool debug = false;
 
 		public List<Player> Players {get; set;}
 		public Deck Deck {get; set;}
 
-		private readonly int minCardRank = 10;
+		private readonly int minCardRank = 2;
+		private int numStartingCardsInHand;
+
+		private Random random = new Random();
+
+		private Suit TrumpSuit = Suit.SPADE;
 
 		public SimpleSpadesRound(List<Player> players) {
 			this.Players = players;
@@ -17,6 +23,10 @@ namespace CardGame {
 
 			if (this.Deck.Cards.Count % Players.Count != 0) {
 				throw new Exception("Deck % Players != 0");
+			} else if (this.Deck.Cards.Count/Players.Count % 2 !=1) { //Odd number of tricks
+				throw new Exception("Game requires an odd number of tricks");
+			} else {
+				numStartingCardsInHand = this.Deck.Cards.Count / Players.Count;
 			}
 		}
 
@@ -31,8 +41,8 @@ namespace CardGame {
 		public void SetCardValues() {
 			Players.ForEach(player => {
 				player.Hand
-				.FindAll(card => card.Suit.Equals(Suit.SPADE))
-				.ForEach(card => card.Value += 15 - minCardRank);
+				.FindAll(card => card.Suit.Equals(TrumpSuit))
+				.ForEach(card => { card.Value += 15 - minCardRank; card.IsTrump = true; });
 			});
 		}
 
@@ -47,16 +57,27 @@ namespace CardGame {
 
 			while (leadPlayer.Hand.Any()) {
 
-				Console.WriteLine();
-				Console.WriteLine(leadPlayer.Name + " to lead." );
-				Console.WriteLine();
+				Debug();
+				Debug(leadPlayer.Name + " to lead." );
+				Debug();
 
 				Card leadCard = null;
 
 				if (leadPlayer.IsHuman()) {
 					leadCard = leadPlayer.HumanPickCard(leadCard);
 				} else {
-					leadCard = leadPlayer.PopRandomCard();
+
+					if (leadPlayer.IsAiEasy() || leadPlayer.IsAiRandom()) {
+						leadCard = leadPlayer.PopRandomCard();
+					} else if (leadPlayer.IsAiMedium()) {
+						PrintGameState();
+						if (leadPlayer.Hand.Count == numStartingCardsInHand) {
+							leadCard = leadPlayer.AiPickLeadCard(); //This appears to have no effect when players can't use the information gained.
+						} else {
+							leadCard = leadPlayer.PopRandomCard();
+						}
+						Debug(leadCard);
+					}
 				}
 
 				Trick trick = new Trick(leadCard, leadPlayer);
@@ -71,8 +92,14 @@ namespace CardGame {
 						if (player.IsHuman()) {
 							trick.PrintTrick();
 							cardToPlay = player.HumanPickCard(leadCard);
-						} else {
-							cardToPlay = player.AIPickCard(leadCard, currentWinningCard);
+						} else { //Player is AI
+
+							if (player.IsAiRandom()) {
+								cardToPlay = player.AiPickRandomCard(leadCard);
+							} else {
+								cardToPlay = player.AiPickCard(leadCard, currentWinningCard);
+							}
+
 						}
 
 						trick.AddCard(cardToPlay, player);
@@ -86,22 +113,24 @@ namespace CardGame {
 					}
 				}
 
-				Console.WriteLine();
-				trick.PrintTrick();
-				Console.WriteLine();
+				Debug();
+				if (debug) {
+					trick.PrintTrick();
+				}
+				Debug();
 
 				Player winner = trick.DetermineWinner();
 				winner.Tricks++;
 
-				Console.WriteLine("Trick won by: " + winner.Name);
-				Console.WriteLine();
-				Console.WriteLine();
+				Debug("Trick won by: " + winner.Name);
+				Debug();
+				Debug();
 
 				leadPlayer = winner;
 
 				//DEBUG
 				//trick.PrintTrick();
-				//Console.WriteLine(winner.Name);
+				//Debug(winner.Name);
 			}
 
 		}
@@ -111,16 +140,16 @@ namespace CardGame {
 		public void PrintGameState() {
 
 			Players.ForEach(player => {
-				Console.WriteLine("");
-				Console.WriteLine(player.Name);
-				player.Hand.ForEach(card => Console.WriteLine(card));
-				Console.WriteLine(player.Tricks);
+				Debug("");
+				Debug(player.Name);
+				player.Hand.ForEach(card => Debug(card));
+				Debug(player.Tricks);
 			});
 		}
 
 		public void PrintScores() {
 			Players.ForEach(player => {
-				Console.WriteLine("");
+				Console.WriteLine();
 				Console.WriteLine(player.Name);
 				Console.WriteLine(player.Tricks);
 			});
@@ -128,7 +157,25 @@ namespace CardGame {
 		}
 
 		public Player GetWinner() {
-			return Players.OrderBy(player => player.Tricks).First();
+			List<Player> teamOne = new List<Player>() { Players[0], Players[0].Partner };
+			List<Player> teamTwo = new List<Player>();
+
+			Players.ForEach(player => { if (!teamOne.Contains(player)) { teamTwo.Add(player); } });
+
+			int teamOneScore = teamOne.Sum(player => player.Tricks);
+			int teamTwoScore = teamTwo.Sum(player => player.Tricks);
+
+			return teamOneScore > teamTwoScore ? teamOne[0] : teamTwo[0];
+		}
+
+		private void Debug(Object text = null) {
+			if (debug) {
+				if (text == null) {
+					Console.WriteLine();
+				} else {
+					Console.WriteLine(text);
+				}
+			}
 		}
 	}
 }

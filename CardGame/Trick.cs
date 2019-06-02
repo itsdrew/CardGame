@@ -32,17 +32,11 @@ namespace CardGame {
 
 		public Player DetermineWinner() {
 
-			Cards.Keys
-				.OrderByDescending(card => card.Value)
-				.ThenBy(card => card.Suit.Equals(LeadSuit)).ToArray().ToList().ForEach(card => Console.WriteLine(card));	
-
-
 			Card winner = Cards.Keys
 				.OrderByDescending(card => card.Suit.Equals(LeadSuit))
-				.ThenBy(card => card.Value)
+				.ThenBy(card => -card.Value)
 				.First();
 
-			Console.WriteLine("Winner" + winner);
 			return Cards[winner];
 
 		}

@@ -8,6 +8,7 @@ namespace CardGame {
 	public class Deck {
 
 		public List<Card> Cards { get; set; } = new List<Card>();
+		private Random random = new Random();
 
 		public Deck(int minRank, bool shuffled = true) {
 
@@ -41,7 +42,6 @@ namespace CardGame {
 
 		public void Shuffle() {
 			List<Card> shuffled = new List<Card>();
-			Random random = new Random();
 			while (Cards.Any()) {
 				int idx = random.Next(Cards.Count);
 				shuffled.Add(Cards[idx]);
@@ -59,7 +59,8 @@ namespace CardGame {
 		public Suit Suit { get; set; }
 		public Color Color { get; set; }
 		public int Value { get; set; }
-		public bool IsTrump;
+		public bool IsTrump { get; set; }
+		public Player PlayedBy { get; set; }
 
 
 		public Card(Rank rank, Suit suit) {

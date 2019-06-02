@@ -7,24 +7,45 @@ namespace CardGame {
 
 		public string Name { get; set; }
 
-
 		public PlayerType PlayerType { get; set; }
+		public AiType AiType { get; set; }
 
 		public List<Card> Hand { get; set; } = new List<Card>();
 		public int Tricks;
-		public Player partner;
+
+		public Player Partner;
+
+		private Random random = new Random();
 
 		public Player(string name, PlayerType playerType) {
 			this.Name = name;
 			this.PlayerType = playerType;
 		}
 
+		public Player(string name, PlayerType playerType, AiType aiType) {
+			this.Name = name;
+			this.PlayerType = playerType;
+			this.AiType = aiType;
+		}
+
 		public bool IsHuman() {
 			return PlayerType.Equals(PlayerType.HUMAN);
 		}
 
-		public bool IsAI() {
+		public bool IsAi() {
 			return PlayerType.Equals(PlayerType.AI);
+		}
+
+		public bool IsAiRandom() {
+			return AiType.Equals(AiType.RANDOM);
+		}
+
+		public bool IsAiEasy() {
+			return AiType.Equals(AiType.EASY);
+		}
+
+		public bool IsAiMedium() {
+			return AiType.Equals(AiType.MEDIUM);
 		}
 
 		public void SortHand(HandSortOptions options) {
@@ -52,8 +73,70 @@ namespace CardGame {
 
 		}
 
+		private Card PlayCard(Card card) {
+			card.PlayedBy = this;
+			Hand.Remove(card);
+			return card;
+		}
+
+		private Card PlayCard(int handIndex) {
+			Card card = Hand[handIndex];
+			card.PlayedBy = this;
+			Hand.RemoveAt(handIndex);
+			return card;
+		}
+
+		//Lead the longest suited ace first
+		public Card AiPickLeadCard() {
+
+			List<Card> offTrumpAces = Hand.FindAll(card => card.Rank.Equals(Rank.ACE) && !card.IsTrump);
+
+			if (offTrumpAces.Count>0) {
+
+				int currentMaxSuitCount = 0;
+				Card currentAce = null;
+
+				offTrumpAces.ForEach(ace => {
+
+					int suitCount = Hand.Count(card => card.Suit.Equals(ace.Suit));
+
+					if (suitCount > currentMaxSuitCount) {
+						currentMaxSuitCount = suitCount;
+						currentAce = ace;
+					}
+
+				});
+
+				return PlayCard(currentAce);
+
+			} else {
+
+				return PopRandomCard();
+
+			}
+		}
+
+		public Card AiPickRandomCard(Card leadCard) {
+
+			List<Card> sameSuit = Hand.FindAll(card => card.Suit.Equals(leadCard.Suit));
+
+			if (sameSuit.Count > 0) {
+
+				return PlayCard(sameSuit[random.Next(0, sameSuit.Count)]);
+
+			} else {
+
+				return PlayCard(random.Next(0, Hand.Count));
+
+			}
+		}
+
 		//Follow suit if have card higher, throw highest, else throw lowest, else throw lowest spade, else throw lowest card
-		public Card AIPickCard(Card leadCard, Card currentWinningCard) {
+		public Card AiPickCard(Card leadCard, Card currentWinningCard) {
+
+			if (currentWinningCard.PlayedBy.Equals(Partner)) {
+				return PlayCard(Hand.OrderByDescending(card => card.Value).ToList().Last());
+			}
 
 			List<Card> cardsInSuit = new List<Card>();
 			List<Card> trumps = new List<Card>();
@@ -73,7 +156,7 @@ namespace CardGame {
 
 			if (cardsInSuit.Any()) {
 
-				cardsInSuit.OrderByDescending(card => card.Value);
+				cardsInSuit = cardsInSuit.OrderByDescending(card => card.Value).ToList();
 
 				if (cardsInSuit.First().Value>currentWinningCard.Value) {
 					cardToPlay = cardsInSuit.First();
@@ -83,27 +166,29 @@ namespace CardGame {
 
 			} else if (trumps.Any()) {
 
-				trumps.OrderBy(card => card.Value);
+				trumps = trumps.OrderBy(card => card.Value).ToList();
 
 				if (trumps.First().Value>currentWinningCard.Value) {
 					cardToPlay = trumps.First();
 				} else {
-					offSuit.OrderByDescending(card => card.Value);
-					cardToPlay = offSuit.Last();
+					offSuit = offSuit.OrderByDescending(card => card.Value).ToList();
+					if (offSuit.Any()) {
+						cardToPlay = offSuit.Last();
+					} else {
+						cardToPlay = trumps.Last();
+					}
 				}
 
 
 			} else {
 
-				offSuit.OrderByDescending(card => card.Value);
+				offSuit = offSuit.OrderByDescending(card => card.Value).ToList();
 
 				cardToPlay = offSuit.Last();
 
 			}
 
-			Hand.Remove(cardToPlay);
-
-			return cardToPlay;
+			return PlayCard(cardToPlay);
 		}
 
 		public Card HumanPickCard(Card leadCard) {
@@ -121,14 +206,11 @@ namespace CardGame {
 			if (int.TryParse(userInput, out idx)) {
 
 				if (idx>=0 && idx<Hand.Count) {
-					
-					Card choice = Hand[idx];
 
-					if (CardChoiceIsValid(leadCard, choice)) {
+					if (CardChoiceIsValid(leadCard, Hand[idx])) {
 
-						Console.WriteLine(choice);
-						Hand.RemoveAt(idx);
-						return choice;
+						Console.WriteLine(Hand[idx]);
+						return PlayCard(idx);
 
 					} else {
 
@@ -154,16 +236,10 @@ namespace CardGame {
 
 		}
 
-			public Card PopRandomCard() {
+		public Card PopRandomCard() {
+		
+			return PlayCard(random.Next(0, Hand.Count()));
 
-			Random random = new Random();
-
-			int randCardIndex = random.Next(0, Hand.Count());
-
-			Card card = Hand[randCardIndex];
-			Hand.RemoveAt(randCardIndex);
-
-			return card;
 		}
 
 		public void PrintHandWithIndex() {
@@ -190,7 +266,14 @@ namespace CardGame {
 	public enum PlayerType {
 	
 		HUMAN,
-		AI
+		AI,
 	
+	}
+
+	public enum AiType {
+	
+		RANDOM,
+		EASY,
+		MEDIUM
 	}
 }
